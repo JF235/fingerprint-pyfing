@@ -164,8 +164,8 @@ Examples:
             help="Input image DPI; images are pre-scaled to 500 dpi before inference (default: 500)",
         )
         sp.add_argument(
-            "--threshold", type=float, default=0.6,
-            help="Minutia quality threshold 0–1 (default: 0.6)",
+            "--threshold", type=float, default=0.15,
+            help="Minutia quality threshold 0–1 (default: 0.15)",
         )
         sp.add_argument(
             "--type-threshold", dest="type_threshold", type=float, default=0.5,

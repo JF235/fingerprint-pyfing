@@ -334,7 +334,7 @@ def main():
     p.add_argument("--gpu", type=int, default=0)
     p.add_argument("--batch-size", "-b", type=int, default=8)
     p.add_argument("--num-workers", type=int, default=4)
-    p.add_argument("--threshold", type=float, default=0.6)
+    p.add_argument("--threshold", type=float, default=0.15)
     p.add_argument("--type-threshold", type=float, default=0.5)
     p.add_argument("--warmup", type=int, default=5)
     p.add_argument("--dpi", type=int, default=500)

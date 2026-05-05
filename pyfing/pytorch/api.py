@@ -490,7 +490,7 @@ class InferenceRunner:
 
     def _run_hybrid(self):
         num_cpu = self.config.get("num_cpu_workers", 4)
-        threshold = self.config.get("threshold", 0.6)
+        threshold = self.config.get("threshold", 0.15)
         type_threshold = self.config.get("type_threshold", 0.5)
         input_base = self.config.get("input_base_path")
 
@@ -530,7 +530,7 @@ class InferenceRunner:
     def _run_full_gpu(self):
         num_save = self.config.get("num_cpu_workers", 4)
         chunk_size = self.config["batch_size"] * 10
-        threshold = self.config.get("threshold", 0.6)
+        threshold = self.config.get("threshold", 0.15)
         type_threshold = self.config.get("type_threshold", 0.5)
         input_base = self.config.get("input_base_path")
 
@@ -619,7 +619,7 @@ def run_inference(
     batch_size: int = 8,
     num_workers: int = 4,
     dpi: int = 500,
-    threshold: float = 0.6,
+    threshold: float = 0.15,
     type_threshold: float = 0.5,
     recursive: bool = True,
     strategy: str = "full_gpu",
@@ -638,7 +638,7 @@ def run_inference(
         batch_size:     Images per GPU per step.
         num_workers:    DataLoader worker processes per GPU.
         dpi:            DPI of input images (model trained at 500).
-        threshold:      Minutia quality threshold (default 0.6).
+        threshold:      Minutia quality threshold (default 0.15).
         type_threshold: Ending/Bifurcation threshold used in exported minutia type.
         recursive:      Recurse into subdirectories.
         strategy:       ``'full_gpu'`` or ``'hybrid'``.

@@ -107,7 +107,7 @@ leader infer images/ output/ --gpus 0
 | `--cores` | `4` | DataLoader worker processes per GPU |
 | `--cpu-workers` | `4` | Threads for saving / post-processing |
 | `--dpi` | `500` | Input DPI; images are pre-scaled to 500 dpi |
-| `--threshold` | `0.6` | Minutia quality threshold (0–1) |
+| `--threshold` | `0.15` | Minutia quality threshold (0–1) |
 | `--type-threshold` | `0.5` | Ending vs Bifurcation decision threshold |
 | `--strategy` | `full_gpu` | `full_gpu` or `hybrid` (GPU infer + CPU post) |
 | `-r / --recursive` | off | Recurse into subdirectories |
@@ -155,7 +155,7 @@ run_inference(
     gpus=2,
     batch_size=8,
     dpi=500,
-    threshold=0.6,
+    threshold=0.15,
     recursive=True,
 )
 ```

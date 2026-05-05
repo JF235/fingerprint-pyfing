@@ -37,7 +37,7 @@ class LeaderParameters(EndToEndMinutiaExtractionParameters):
     This class holds the configuration for fingerprint minutia extraction, including 
     image rescaling requirements, neural network input constraints, and detection thresholds.
     """
-    def __init__(self, dnn_input_dpi = 500, dnn_input_size_multiple = 32, minutia_quality_threshold = 0.6, type_threshold = 0.5):
+    def __init__(self, dnn_input_dpi = 500, dnn_input_size_multiple = 32, minutia_quality_threshold = 0.15, type_threshold = 0.5):
         """
         Initializes the LEADER parameters.
 
@@ -47,10 +47,9 @@ class LeaderParameters(EndToEndMinutiaExtractionParameters):
             dnn_input_size_multiple (int): The divisor required for input dimensions. 
                 Input images are padded so that both width and height are multiples 
                 of this value, as required by the underlying model architecture.
-            minutia_quality_threshold (float): The confidence threshold for minutia detection. 
-                The default value (0.6) is tuned for a balanced precision/recall on 
-                high-quality databases; different datasets may require adjustment 
-                for optimal results.
+            minutia_quality_threshold (float): The confidence threshold for minutia detection.
+                Lower values return more candidate minutiae; different datasets may
+                require adjustment for optimal results.
             type_threshold (float): The decision threshold for classification. 
                 Values above this threshold are typically classified as 'Endings' (E), 
                 while values below are classified as 'Bifurcations' (B).
