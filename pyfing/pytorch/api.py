@@ -213,6 +213,49 @@ def _extract_minutiae_numpy(
     return result[np.argsort(-qualities)]
 
 
+def _extract_minutiae_torch(
+    out: torch.Tensor,       # [4, H, W] cropped to original image size, on GPU
+    threshold: float,
+    type_threshold: float,
+) -> torch.Tensor:
+    """GPU-resident equivalent of `_extract_minutiae_numpy`.
+
+    Operates on the model output channels in CHW layout and returns a
+    `[N, 6]` float32 tensor on the same device:
+    `[x, y, direction_rad, quality, type_code, type_score]`, sorted by
+    quality descending.
+
+    Uses `stable=True` for argsort so the order of equal-quality minutiae
+    is deterministic across runs.
+    """
+    pos_nms = out[3]
+    mask = pos_nms >= threshold
+    ys, xs = torch.nonzero(mask, as_tuple=True)
+    if xs.numel() == 0:
+        return torch.empty((0, 6), dtype=torch.float32, device=out.device)
+    direction  = out[1, ys, xs]
+    type_score = out[2, ys, xs]
+    quality    = out[3, ys, xs]
+    type_code  = torch.where(
+        type_score >= type_threshold,
+        quality.new_tensor(1.0),
+        quality.new_tensor(2.0),
+    )
+    result = torch.stack(
+        [
+            xs.to(quality.dtype),
+            ys.to(quality.dtype),
+            direction,
+            quality,
+            type_code,
+            type_score,
+        ],
+        dim=1,
+    )
+    sort_idx = torch.argsort(quality, descending=True, stable=True)
+    return result[sort_idx]
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Saving
 # ─────────────────────────────────────────────────────────────────────────────
@@ -505,15 +548,35 @@ class InferenceRunner:
 
                     batch_tensors = batch_tensors.to(self.device)
                     raw = self.model(batch_tensors)            # [B, 4, H, W]
-                    # NCHW → NHWC on GPU, then to numpy
-                    out_nhwc = raw.permute(0, 2, 3, 1).cpu().numpy()
 
+                    # GPU-side extraction: threshold + sort per image, then
+                    # transfer ONLY the resulting minutiae arrays. Avoids the
+                    # multi-MB D2H of the full feature map (the dominant cost
+                    # in the previous implementation).
                     orig_hs, orig_ws = batch_orig_shapes
+                    B = raw.shape[0]
+                    gpu_results: list[torch.Tensor] = []
+                    lengths: list[int] = []
+                    for i in range(B):
+                        oh = orig_hs[i].item()
+                        ow = orig_ws[i].item()
+                        m_gpu = _extract_minutiae_torch(
+                            raw[i, :, :oh, :ow], threshold, type_threshold,
+                        )
+                        gpu_results.append(m_gpu)
+                        lengths.append(int(m_gpu.shape[0]))
+
+                    total = sum(lengths)
+                    if total > 0:
+                        packed = torch.cat(gpu_results, dim=0).cpu().numpy()
+                    else:
+                        packed = np.empty((0, 6), dtype=np.float32)
+
+                    offset = 0
                     for i, img_path in enumerate(batch_paths):
-                        orig_h = orig_hs[i].item()
-                        orig_w = orig_ws[i].item()
-                        out_crop = out_nhwc[i, :orig_h, :orig_w, :]
-                        minutiae = _extract_minutiae_numpy(out_crop, threshold, type_threshold)
+                        n = lengths[i]
+                        minutiae = packed[offset : offset + n]
+                        offset += n
                         pending_chunk.append(
                             {
                                 "input_path": img_path,
