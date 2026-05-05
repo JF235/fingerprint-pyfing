@@ -29,9 +29,7 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
-# Import LeaderNet directly from its module to avoid pulling in Keras/TensorFlow.
-# algorithms.py imports from pyfing.minutiae which does `import keras` at the
-# top level — that triggers TF even if we never use it.
+# Import LeaderNet directly from its module to keep CLI startup light.
 from .leader_model import LeaderNet
 
 logger = logging.getLogger("pyfing.leader")

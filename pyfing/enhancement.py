@@ -2,43 +2,14 @@ import os
 import math
 import keras
 import cv2 as cv
-from abc import abstractmethod, ABC
 from ._internal_utils import _predict_and_get_all_outputs, _resize_and_crop_intermediate_output
+from ._interfaces import (
+    EnhancementAlgorithm,
+    EnhancementParameters,
+    GbfenParameters,
+    SnfenParameters,
+)
 from .definitions import *
-
-class EnhancementParameters(Parameters):
-    """
-    Base class for the parameters of an enhancement method.
-    """
-    pass
-
-
-class EnhancementAlgorithm(ABC):
-    """
-    Base class for enhancement methods.
-    """
-    def __init__(self, parameters: EnhancementParameters):
-        self.parameters = parameters
-    
-    @abstractmethod
-    def run(self, image: Image, mask: Image, orientation_field: np.ndarray, ridge_periods: np.ndarray, dpi: int = 500, intermediate_results = None) -> Image:
-        raise NotImplementedError
-    
-    def run_on_db(self, images: list[Image], masks: list[Image], orientation_fields: list[np.ndarray], ridge_periods: list[np.ndarray], dpi_of_images: list[int]) -> list[Image]:
-        return [self.run(img, mask, orientation_field, rp, dpi) for img, mask, orientation_field, rp, dpi in zip(images, masks, orientation_fields, ridge_periods, dpi_of_images)]
-
- 
-
-
-class GbfenParameters(EnhancementParameters):
-    """
-    Parameters of GBFEN (Gabor-Based Fingerprint ENhancement) method.
-    """
-    def __init__(self, orientations_count = 16, periods_count = 9, period_min = 5, period_max = 20):
-        self.orientations_count = orientations_count
-        self.periods_count = periods_count
-        self.period_min = period_min
-        self.period_max = period_max
 
 
 class Gbfen(EnhancementAlgorithm):
@@ -91,17 +62,6 @@ class Gbfen(EnhancementAlgorithm):
         if dpi != 500:
             img = cv.resize(img, (original_image_w, original_image_h), interpolation = cv.INTER_CUBIC)
         return img
-
-
-    
-class SnfenParameters(EnhancementParameters):
-    """
-    Parameters of SNFEN (Simple Network for Fingerprint ENhancement) method.
-    """
-    def __init__(self, dnn_input_dpi = 500, dnn_input_size_multiple = 32):
-        self.dnn_input_dpi = dnn_input_dpi
-        self.dnn_input_size_multiple = dnn_input_size_multiple
-
 
 class Snfen(EnhancementAlgorithm):
     """

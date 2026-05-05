@@ -2,62 +2,13 @@ import os
 import keras
 from keras import layers
 import cv2 as cv
-from abc import abstractmethod, ABC
 from ._internal_utils import _predict_and_get_all_outputs, _resize_and_crop_intermediate_output
+from ._interfaces import (
+    EndToEndMinutiaExtractionAlgorithm,
+    EndToEndMinutiaExtractionParameters,
+    LeaderParameters,
+)
 from .definitions import *
-
-
-class EndToEndMinutiaExtractionParameters(Parameters):
-    """
-    Base class for the parameters of an end-to-end minutia extraction method.
-    """
-    pass
-
-
-class EndToEndMinutiaExtractionAlgorithm(ABC):
-    """
-    Base class for end-to-end minutia extraction methods.
-    """
-    def __init__(self, parameters: EndToEndMinutiaExtractionParameters):
-        self.parameters = parameters
-    
-    @abstractmethod
-    def run(self, image: Image, dpi: int = 500, intermediate_results : list | None = None) -> list[Minutia]:
-        raise NotImplementedError
-    
-    def run_on_db(self, images: list[Image], dpi_of_images: list[int]|None = None) -> list[list[Minutia]]:
-        dpi_list = [500] * len(images) if dpi_of_images is None else dpi_of_images
-        return [self.run(img, dpi) for img, dpi in zip(images, dpi_list)]
-
-   
-class LeaderParameters(EndToEndMinutiaExtractionParameters):
-    """
-    Parameters for LEADER (Lightweight End-to-end Attention-gated Dual autoencodER).
-
-    This class holds the configuration for fingerprint minutia extraction, including 
-    image rescaling requirements, neural network input constraints, and detection thresholds.
-    """
-    def __init__(self, dnn_input_dpi = 500, dnn_input_size_multiple = 32, minutia_quality_threshold = 0.15, type_threshold = 0.5):
-        """
-        Initializes the LEADER parameters.
-
-        Args:
-            dnn_input_dpi (int): The expected resolution (DPI) for input images. 
-                Images with different resolutions will be rescaled to match this value.
-            dnn_input_size_multiple (int): The divisor required for input dimensions. 
-                Input images are padded so that both width and height are multiples 
-                of this value, as required by the underlying model architecture.
-            minutia_quality_threshold (float): The confidence threshold for minutia detection.
-                Lower values return more candidate minutiae; different datasets may
-                require adjustment for optimal results.
-            type_threshold (float): The decision threshold for classification. 
-                Values above this threshold are typically classified as 'Endings' (E), 
-                while values below are classified as 'Bifurcations' (B).
-        """
-        self.dnn_input_dpi = dnn_input_dpi
-        self.dnn_input_size_multiple = dnn_input_size_multiple
-        self.minutia_quality_threshold = minutia_quality_threshold
-        self.type_threshold = type_threshold
 
 
 class Leader(EndToEndMinutiaExtractionAlgorithm):

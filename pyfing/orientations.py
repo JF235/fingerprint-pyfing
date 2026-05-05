@@ -1,34 +1,16 @@
-from abc import abstractmethod, ABC
 import os
 import math
 import keras
 import numpy as np
 import cv2 as cv
 from ._internal_utils import _predict_and_get_all_outputs, _resize_and_crop_intermediate_output
-from .definitions import Parameters, Image
-
-
-class OrientationEstimationParameters(Parameters):
-    """
-    Base class for the parameters of an orientation estimation method.
-    """
-    pass
-
-
-class OrientationEstimationAlgorithm(ABC):
-    """
-    Base class for orientation estimation methods.
-    """
-    def __init__(self, parameters: OrientationEstimationParameters):
-        self.parameters = parameters
-    
-    @abstractmethod
-    def run(self, image: Image, mask: Image = None, dpi: int = 500, intermediate_results = None) -> tuple[np.ndarray, np.ndarray]:
-        raise NotImplementedError
-    
-    def run_on_db(self, images: list[Image], masks: list[Image], dpi_of_images: list[int]) -> list[tuple[np.ndarray,np.ndarray]]:
-        return [self.run(img, mask, dpi) for img, mask, dpi in zip(images, masks, dpi_of_images)]
-
+from .definitions import Image
+from ._interfaces import (
+    GbfoeParameters,
+    OrientationEstimationAlgorithm,
+    OrientationEstimationParameters,
+    SnfoeParameters,
+)
 
 
 def compute_orientation_RMSD(orientations, gt, gt_mask):
@@ -36,22 +18,6 @@ def compute_orientation_RMSD(orientations, gt, gt_mask):
     computed only on gt_mask pixels and expressed in degrees"""
     diff = (orientations - gt + np.pi/2) % np.pi - np.pi/2
     return (np.sqrt((diff[gt_mask != 0]**2).mean()) * 180 / np.pi)    
-  
-
-
-class GbfoeParameters(OrientationEstimationParameters):
-    """
-    Parameters of GBFOE (Gradient-Based Fingerprint Orientation Estimation) method
-    """
-
-    def __init__(self, sigma_base = 27, sigma_multiplier = 43, sigma_smooth = 1.25, median_size = 5, percentile = 19):
-        self.sigma_base = sigma_base
-        self.sigma_multiplier = sigma_multiplier
-        self.sigma_smooth = sigma_smooth
-        self.median_size = median_size
-        self.percentile = percentile        
-        
-
 class Gbfoe(OrientationEstimationAlgorithm):
     """
     Implementation of GBFOE (Gradient-Based Fingerprint Orientation Estimation) method.
@@ -116,16 +82,6 @@ class Gbfoe(OrientationEstimationAlgorithm):
             strengths[mask==0] = 0
         return strengths, n, d
     
-
-    
-class SnfoeParameters(OrientationEstimationParameters):
-    """
-    Parameters of SNFOE (Simple Network for Fingerprint Orientation Estimation) method.
-    """
-    def __init__(self, dnn_input_dpi = 500, dnn_input_size_multiple = 32):
-        self.dnn_input_dpi = dnn_input_dpi
-        self.dnn_input_size_multiple = dnn_input_size_multiple
-
 
 class Snfoe(OrientationEstimationAlgorithm):
     """

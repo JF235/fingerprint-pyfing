@@ -1,33 +1,16 @@
-from abc import abstractmethod, ABC
 import os
 import keras
 import math
 import numpy as np
 import cv2 as cv
-from .definitions import Image, Parameters
+from .definitions import Image
+from ._interfaces import (
+    GmfsParameters,
+    SegmentationAlgorithm,
+    SegmentationParameters,
+    SufsParameters,
+)
 from ._internal_utils import _predict_and_get_all_outputs, _resize_and_crop_intermediate_output
-
-
-class SegmentationParameters(Parameters):
-    """
-    Base class for the parameters of a segmentation method.
-    """
-    pass
-
-
-class SegmentationAlgorithm(ABC):
-    """
-    Base class for segmentation methods.
-    """
-    def __init__(self, parameters: SegmentationParameters):
-        self.parameters = parameters
-    
-    @abstractmethod
-    def run(self, image: Image, intermediate_results = None) -> Image:
-        raise NotImplementedError
-    
-    def run_on_db(self, images: list[Image]) -> list[Image]:
-        return [self.run(img) for img in images]
 
 
 def compute_segmentation_error(mask, gt_mask):
@@ -42,22 +25,6 @@ def compute_dice_coefficient(mask, gt_mask):
 def compute_jaccard_coefficient(mask, gt_mask):
     """Returns the Jaccard similarity coefficient of mask with respect to ground truth mask gt_mask"""
     return np.count_nonzero(gt_mask & mask) / np.count_nonzero(gt_mask | mask)
-
-
-
-class GmfsParameters(SegmentationParameters):
-    """
-    Parameters of the GMFS segmentation method.
-    """
-
-    def __init__(self, sigma = 13/3, percentile = 95, threshold = 0.2, closing_count = 6, opening_count = 12, image_dpi = 500):
-        self.sigma = sigma
-        self.percentile = percentile
-        self.threshold = threshold
-        self.closing_count = closing_count
-        self.opening_count = opening_count
-        self.image_dpi = image_dpi
-
 
 class Gmfs(SegmentationAlgorithm):
     """
@@ -144,21 +111,6 @@ class Gmfs(SegmentationAlgorithm):
 
 
     _se3x3 = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
-
-
-
-class SufsParameters(SegmentationParameters):  
-    """
-    Parameters of the SUFS segmentation method.
-    """
-    
-    def __init__(self, dnn_input_dpi = 500, dnn_input_size_multiple = 64, image_dpi = 500, threshold = 0.5, border = 33):
-        self.dnn_input_dpi = dnn_input_dpi
-        self.dnn_input_size_multiple = dnn_input_size_multiple
-        self.image_dpi = image_dpi
-        self.threshold = threshold
-        self.border = border
-
 
 class Sufs(SegmentationAlgorithm):
     """

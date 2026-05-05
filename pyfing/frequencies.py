@@ -2,32 +2,15 @@ import os
 import math
 import keras
 import cv2 as cv
-from abc import abstractmethod, ABC
 from ._internal_utils import _predict_and_get_all_outputs, _resize_and_crop_intermediate_output
+from ._interfaces import (
+    FrequencyEstimationAlgorithm,
+    FrequencyEstimationParameters,
+    SkffeParameters,
+    SnffeParameters,
+    XsffeParameters,
+)
 from .definitions import *
-
-
-class FrequencyEstimationParameters(Parameters):
-    """
-    Base class for the parameters of a frequency estimation method.
-    """
-    pass
-
-
-class FrequencyEstimationAlgorithm(ABC):
-    """
-    Base class for frequency estimation methods.
-    """
-    def __init__(self, parameters: FrequencyEstimationParameters):
-        self.parameters = parameters
-    
-    @abstractmethod
-    def run(self, image: Image, mask: Image, orientation_field: np.ndarray, dpi: int = 500, intermediate_results = None) -> np.ndarray:
-        raise NotImplementedError
-    
-    def run_on_db(self, images: list[Image], masks: list[Image], orientation_fields: list[np.ndarray], dpi_of_images: list[int]) -> list[np.ndarray]:
-        return [self.run(img, mask, orientation_field, dpi) for img, mask, orientation_field, dpi in zip(images, masks, orientation_fields, dpi_of_images)]
-
 
 
 def compute_ridge_period_MAPE(rp, gt, gt_mask):
@@ -35,20 +18,6 @@ def compute_ridge_period_MAPE(rp, gt, gt_mask):
     computed only on gt_mask pixels"""
     diff = np.abs(rp - gt).astype(np.float32)
     return (diff[gt_mask != 0]*100/gt[gt_mask!=0]).mean()
-
-
-
-class SkffeParameters(FrequencyEstimationParameters):
-    """
-    Parameters of SKFFE (SKeleton-based Fingerprint Frequency Estimation) method
-    """
-
-    def __init__(self, period_min = 5, period_max = 18, median_blur_size = 5, final_blur_size = 5):
-        self.period_min = period_min
-        self.period_max = period_max
-        self.median_blur_size = median_blur_size
-        self.final_blur_size = final_blur_size        
-        
 
 class Skffe(FrequencyEstimationAlgorithm):
     """
@@ -133,27 +102,6 @@ class Skffe(FrequencyEstimationAlgorithm):
             last_px, last_py = px, py
         return rp,px,py
     
-
-class XsffeParameters(FrequencyEstimationParameters):
-    """
-    Parameters of XSFFE (X-Signature Fingerprint Frequency Estimation) method
-    """
-
-    def __init__(self, window_size = (23, 43), step = 8, border = 7, min_background_distance = 11, period_min = 5, period_max = 20,
-                 min_valid_distances = 4, diffusion_size = 21, median_size = 5, blur_size = 3, final_blur_size = 33):
-        self.window_size = window_size
-        self.step = step
-        self.border = border
-        self.min_background_distance = min_background_distance
-        self.min_valid_distances = min_valid_distances
-        self.period_min = period_min
-        self.period_max = period_max
-        self.median_size = median_size
-        self.blur_size = blur_size
-        self.final_blur_size = final_blur_size
-        self.diffusion_size = diffusion_size
-
-
 class Xsffe(FrequencyEstimationAlgorithm):
     """
     Implementation of XSFFE (X-Signature Fingerprint Frequency Estimation) method.
@@ -249,16 +197,6 @@ class Xsffe(FrequencyEstimationAlgorithm):
         img[:,size+1:,:] = region[...,np.newaxis]
         return img
     
-
-    
-class SnffeParameters(FrequencyEstimationParameters):
-    """
-    Parameters of SNFFE (Simple Network for Fingerprint Frequency Estimation) method.
-    """
-    def __init__(self, dnn_input_dpi = 500, dnn_input_size_multiple = 32):
-        self.dnn_input_dpi = dnn_input_dpi
-        self.dnn_input_size_multiple = dnn_input_size_multiple
-
 
 class Snffe(FrequencyEstimationAlgorithm):
     """

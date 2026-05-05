@@ -7,12 +7,19 @@ import cv2 as cv
 import numpy as np
 import torch
 
+from pyfing._interfaces import (
+    EnhancementAlgorithm,
+    EndToEndMinutiaExtractionAlgorithm,
+    FrequencyEstimationAlgorithm,
+    LeaderParameters,
+    OrientationEstimationAlgorithm,
+    SegmentationAlgorithm,
+    SnfenParameters,
+    SnffeParameters,
+    SnfoeParameters,
+    SufsParameters,
+)
 from pyfing.definitions import Image, Minutia
-from pyfing.enhancement import EnhancementAlgorithm, SnfenParameters
-from pyfing.frequencies import FrequencyEstimationAlgorithm, SnffeParameters
-from pyfing.minutiae import EndToEndMinutiaExtractionAlgorithm, LeaderParameters
-from pyfing.orientations import OrientationEstimationAlgorithm, SnfoeParameters
-from pyfing.segmentation import SegmentationAlgorithm, SufsParameters
 
 from .leader_model import LeaderNet
 from .registry import get_model_spec
@@ -351,4 +358,3 @@ class LeaderTorch(EndToEndMinutiaExtractionAlgorithm):
     def run_on_db(self, images: list[Image], dpi_of_images=None) -> list[list[Minutia]]:
         dpi_list = [self.parameters.dnn_input_dpi] * len(images) if dpi_of_images is None else dpi_of_images
         return [self.run(img, dpi) for img, dpi in zip(images, dpi_list)]
-
